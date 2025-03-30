@@ -1,0 +1,12 @@
+logs/
+certs/
+__pycache__
+app/__pycache__
+config/__pycache__
+screens/__pycache__
+utils/__pycache__
+secrets.json
+secrets2.json
+config.toml
+prompt.md
+
