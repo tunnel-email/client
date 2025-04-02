@@ -1,3 +1,5 @@
+from os.path import dirname
+
 BASE_DOMAIN = "tunnel.email"
 BASE_URL = "https://tunnel.email"
 DIRECTORY_URL = 'https://acme.zerossl.com/v2/DV90'

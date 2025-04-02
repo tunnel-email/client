@@ -9,4 +9,8 @@ secrets.json
 secrets2.json
 config.toml
 prompt.md
-
+main.spec
+build/
+dist/
+rathole
+rathole.exe

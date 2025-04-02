@@ -1,0 +1,4 @@
+PyQT5
+requests
+PyQTWebEngine
+acme

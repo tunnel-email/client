@@ -2,10 +2,11 @@ import logging
 import os
 from datetime import datetime
 import sys
+from app.utils.api import script_path
 
 
 # создание директории с логами
-log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs')
+log_dir = script_path('logs')
 os.makedirs(log_dir, exist_ok=True)
 
 # имя файла с текущей датой

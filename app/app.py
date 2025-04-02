@@ -13,9 +13,10 @@ from app.screens.email_interface_screen import EmailInterfaceScreen
 from app.screens.loading_screen import LoadingScreen
 
 from app.utils.worker import Worker
-from app.utils.api import get_ttl
+from app.utils.api import get_ttl, script_path
 from app.utils.tunnel import (create_tunnel, delete_tunnel,
-                             save_certificate, save_token, save_developer_token, run_rathole)
+                             save_certificate, save_token, load_secrets,
+                             save_developer_token, run_rathole, add_tunnel_to_rathole)
 from app.utils.logger import setup_logger
 
 import app.utils.mail_server_tls as mailserv
@@ -23,6 +24,7 @@ from app.utils.cert_manager import get_certificate
 
 from requests.exceptions import ConnectionError
 from app.config.constants import BASE_DOMAIN
+import os.path
 
 
 class EmailTunnelApp(QMainWindow):
@@ -83,10 +85,7 @@ class EmailTunnelApp(QMainWindow):
     def loadToken(self):
         self.logger.debug("Загрузка сохраненных токенов")
         try:
-            with open("secrets.json", "r") as f:
-                data = json.load(f)
-                self.token = data.get("token")
-                self.dev_token = data.get("developer_token")
+            self.token, self.dev_token = load_secrets()
             
             if self.token and self.dev_token:
                 self.logger.info("Найдены оба токена, переход к главному экрану")
@@ -239,13 +238,7 @@ class EmailTunnelApp(QMainWindow):
             
             try:
                 self.logger.debug("Создание конфига для rathole")
-                with open("config.toml", "w") as file:
-                    file.write(f"""[client]
-remote_addr = "{BASE_DOMAIN}:6789"
-
-[client.services.{self.tunnel_id}]
-token = \"{tunnel_secret}\"
-local_addr = \"127.0.0.1:8025\"""")
+                add_tunnel_to_rathole(self.tunnel_id, tunnel_secret)
             except Exception as config_error:
                 self.logger.error(f"Ошибка при создании конфигурационного файла: {str(config_error)}")
                 raise config_error
@@ -256,7 +249,9 @@ local_addr = \"127.0.0.1:8025\"""")
             
             # запуск почтового сервера и получение сигналов
             self.logger.debug(f"Запуск почтового сервера с сертификатами для {self.subdomain}")
-            self.mail_controller, self.email_signals = mailserv.start(f"./certs/{self.subdomain}")
+
+            certs_path = os.path.join(script_path("certs"), self.subdomain)
+            self.mail_controller, self.email_signals = mailserv.start(certs_path)
             
             # подключаем сигнал о новых письмах к обработчику
             self.email_signals.new_email_received.connect(self.handle_new_email)
