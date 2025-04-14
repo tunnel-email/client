@@ -8,10 +8,28 @@ from aiosmtpd.smtp import SMTP
 from email.policy import default
 from email.utils import parseaddr
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from app.config.constants import SMTPD_LOGGING
 
-class EmailSignals(QObject):
-    new_email_received = pyqtSignal(dict)
+from Qt import QtCore 
+import logging, sys
+
+
+def configure_smtpd_logging():
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    logger = logging.getLogger("mail.log")
+    fmt = "[%(asctime)s %(levelname)s] %(message)s"
+    datefmt = None
+    formatter = logging.Formatter(fmt, datefmt, "%")
+    stderr_handler.setFormatter(formatter)
+    logger.addHandler(stderr_handler)
+    logger.setLevel(logging.DEBUG)
+
+if SMTPD_LOGGING:
+    configure_smtpd_logging()
+
+
+class EmailSignals(QtCore.QObject):
+    new_email_received = QtCore.Signal(dict)
 
 email_signals = EmailSignals()
 
@@ -46,11 +64,11 @@ class EmailHandler:
             "timestamp": message.get("Date", ""),
             "recipients": envelope.rcpt_tos
         }
-        
         # сигнал в основной поток
         email_signals.new_email_received.emit(email_data)
         
         return '250 Message accepted for delivery'
+
     
     def _get_body(self, message):
         # извлекаем html и обычный текст
@@ -84,6 +102,7 @@ class EmailHandler:
         return html_content, plain_content
 
 
+
 def start(certs_path, port=8025):
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ssl_context.load_cert_chain(f'{certs_path}/fullchain.pem', f'{certs_path}/privkey.pem')
@@ -108,10 +127,10 @@ def start(certs_path, port=8025):
 def run_server(controller):
     controller.start()
     try:
-        # Бесконечный цикл для поддержания работы сервера
         while True:
-            time.sleep(1)  # Обычный sleep вместо asyncio
+            time.sleep(1)
     except Exception as e:
         print(f"Ошибка сервера: {e}")
     finally:
         controller.stop()
+

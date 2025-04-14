@@ -19,9 +19,14 @@ def check_security(subdomain):
     return req
 
 def resource_path(relative_path):
-    try:
+    if getattr(sys, "frozen", False):
+        # pyinstaller
         base_path = sys._MEIPASS
-    except Exception:
+    elif "__compiled__" in globals():
+        # nuitka
+        base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    else:
+        # python script
         base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
     return os.path.join(base_path, relative_path)
@@ -29,8 +34,11 @@ def resource_path(relative_path):
 
 def script_path(relative_path):
     if getattr(sys, 'frozen', False):
-        # ecли pyinstaller
+        # pyinstaller
         base_path = os.path.dirname(sys.executable)
+    elif "__compiled__" in globals():
+        # nuitka
+        base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     else:
         # если python скрипт
         base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))

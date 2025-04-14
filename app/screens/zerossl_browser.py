@@ -1,17 +1,14 @@
-from PyQt5.QtCore import QUrl, Qt, pyqtSignal
-from PyQt5.QtWidgets import (
-    QVBoxLayout, QHBoxLayout, QPushButton, 
-    QProgressBar, QDialog, QMessageBox, QLineEdit
-)
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEnginePage, QWebEngineSettings
-from PyQt5.QtNetwork import QNetworkProxy
+from Qt import QtCore, QtWidgets, QtNetwork
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile, QWebEngineSettings
+
 from app.config.constants import PROXY_HOST, PROXY_PORT
 from app.utils.logger import setup_logger
 
 
-class ZeroSSLBrowser(QDialog):
+class ZeroSSLBrowser(QtWidgets.QDialog):
     # cигнал, который отправится, когда пользователь получит токен
-    token_received = pyqtSignal()
+    token_received = QtCore.Signal()
     
     def __init__(self, zerossl_url, parent=None):
         super().__init__(parent)
@@ -31,7 +28,7 @@ class ZeroSSLBrowser(QDialog):
             self.load_url(zerossl_url)
         except Exception as e:
             self.logger.error(f"Ошибка инициализации браузера ZeroSSL: {str(e)}", exc_info=True)
-            QMessageBox.critical(
+            QtWidgets.QMessageBox.critical(
                 self,
                 "Ошибка браузера",
                 f"Не удалось инициализировать браузер: {str(e)}"
@@ -40,12 +37,12 @@ class ZeroSSLBrowser(QDialog):
     def setup_proxy(self):
         try:
             # отдельный профиль для браузера
-            self.profile = QWebEngineProfile("zerossl_browser")
+            self.profile = QWebEngineProfile("zerossl_browser") 
             
             # socks5 прокси для доступа к ZeroSSL
             self.logger.info(f"Настройка прокси: {PROXY_HOST}:{PROXY_PORT}")
-            proxy = QNetworkProxy(QNetworkProxy.Socks5Proxy, PROXY_HOST, PROXY_PORT)
-            QNetworkProxy.setApplicationProxy(proxy)
+            proxy = QtNetwork.QNetworkProxy(QtNetwork.QNetworkProxy.Socks5Proxy, PROXY_HOST, PROXY_PORT)
+            QtNetwork.QNetworkProxy.setApplicationProxy(proxy)
             self.logger.debug("Прокси настроен успешно")
         except Exception as e:
             self.logger.error(f"Ошибка настройки прокси: {str(e)}")
@@ -53,25 +50,25 @@ class ZeroSSLBrowser(QDialog):
 
     def setup_ui(self):
         try:
-            layout = QVBoxLayout(self)
+            layout = QtWidgets.QVBoxLayout(self)
             layout.setSpacing(5)
             layout.setContentsMargins(5, 5, 5, 5)
             
             # верхняя панель
-            control_panel = QHBoxLayout()
+            control_panel = QtWidgets.QHBoxLayout()
             
             # кнопки навигации
-            self.back_btn = QPushButton("Назад")
+            self.back_btn = QtWidgets.QPushButton("Назад")
             self.back_btn.clicked.connect(lambda: self.browser_view.back())
             
-            self.forward_btn = QPushButton("Вперед")
+            self.forward_btn = QtWidgets.QPushButton("Вперед")
             self.forward_btn.clicked.connect(lambda: self.browser_view.forward())
             
-            self.reload_btn = QPushButton("Обновить")
+            self.reload_btn = QtWidgets.QPushButton("Обновить")
             self.reload_btn.clicked.connect(lambda: self.browser_view.reload())
             
             # поле с url
-            self.url_field = QLineEdit()
+            self.url_field = QtWidgets.QLineEdit()
             self.url_field.setReadOnly(True) # чтобы нельзя было редактировать
 
             self.url_field.setMaximumWidth(300)
@@ -80,10 +77,10 @@ class ZeroSSLBrowser(QDialog):
             self.url_field.setMaximumHeight(30)
 
             self.url_field.setStyleSheet("font-size: 15px; font-weight: 300;")
-            self.url_field.setAlignment(Qt.AlignCenter)
+            self.url_field.setAlignment(QtCore.Qt.AlignCenter)
             
             # "я получил токен"
-            self.done_btn = QPushButton("Я получил токен")
+            self.done_btn = QtWidgets.QPushButton("Я получил токен")
             self.done_btn.clicked.connect(self.close_browser)
             
             control_panel.addWidget(self.back_btn)
@@ -108,7 +105,7 @@ class ZeroSSLBrowser(QDialog):
             self.page.urlChanged.connect(self.update_url_field)
             
             # progress-bar
-            self.progress_bar = QProgressBar()
+            self.progress_bar = QtWidgets.QProgressBar()
             self.progress_bar.setTextVisible(False)
             self.progress_bar.setMaximumHeight(2)
             self.progress_bar.hide()
@@ -132,13 +129,13 @@ class ZeroSSLBrowser(QDialog):
     def load_url(self, url):
         try:
             self.logger.info(f"Загрузка URL: {url}")
-            qurl = QUrl(url)
+            qurl = QtCore.QUrl(url)
             self.browser_view.load(qurl)
             # обновляем поле url при начальной загрузке
             self.url_field.setText(url)
         except Exception as e:
             self.logger.error(f"Ошибка при загрузке URL: {str(e)}", exc_info=True)
-            QMessageBox.critical(
+            QtWidgets.QMessageBox.critical(
                 self, 
                 "Ошибка соединения", 
                 f"Не удалось подключиться к серверу\n"

@@ -1,6 +1,9 @@
+import os
+os.environ['QT_PREFERRED_BINDING'] = 'PySide6' # pyside6 backend
+
 import sys
 import traceback
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from Qt import QtWidgets
 from app.app import EmailTunnelApp
 from app.utils.logger import setup_logger
 
@@ -8,13 +11,13 @@ from app.utils.logger import setup_logger
 logger = setup_logger("main")
 
 def excepthook(exc_type, exc_value, exc_tb):
-    # глобальный обработчик исключений
+    # обработчик исключений
     error_msg = ''.join(traceback.format_exception(exc_type, exc_value, exc_tb))
     logger.critical(f"Необработанное исключение: {error_msg}")
     
     # показываем пользователю сообщение об ошибке
-    msg_box = QMessageBox()
-    msg_box.setIcon(QMessageBox.Critical)
+    msg_box = QtWidgets.QMessageBox()
+    msg_box.setIcon(QtWidgets.QMessageBox.Critical)
     msg_box.setWindowTitle("Критическая ошибка")
     msg_box.setText("Произошла непредвиденная ошибка в приложении")
     msg_box.setDetailedText(error_msg)
@@ -23,7 +26,7 @@ def excepthook(exc_type, exc_value, exc_tb):
 def main():
     logger.info("Запуск приложения")
     try:
-        app = QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
         app.setStyle("Fusion")
         
         sys.excepthook = excepthook

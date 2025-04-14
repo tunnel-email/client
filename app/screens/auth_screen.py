@@ -1,6 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QMessageBox
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from Qt import QtWidgets, QtCore, QtGui
 
 import requests
 from string import ascii_lowercase, digits
@@ -11,7 +9,7 @@ from app.config.constants import BASE_URL, TOKEN_LENGTH
 from app.utils.logger import setup_logger
 
 
-class AuthScreen(QWidget):
+class AuthScreen(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.logger = setup_logger(f"{self.__class__.__name__}")
@@ -24,7 +22,7 @@ class AuthScreen(QWidget):
             self.logger.debug("Интерфейс экрана авторизации настроен успешно")
         except Exception as e:
             self.logger.error(f"Ошибка при инициализации экрана авторизации: {str(e)}", exc_info=True)
-            QMessageBox.critical(
+            QtWidgets.QMessageBox.critical(
                 self, 
                 "Ошибка инициализации", 
                 f"Не удалось настроить экран авторизации: {str(e)}"
@@ -32,33 +30,33 @@ class AuthScreen(QWidget):
         
     def setup_ui(self):
         try:
-            layout = QVBoxLayout(self)
+            layout = QtWidgets.QVBoxLayout(self)
             layout.setContentsMargins(20, 20, 20, 20)
             
-            auth_label = QLabel('Авторизация через Яндекс')
-            auth_label.setAlignment(Qt.AlignCenter)
-            auth_label.setFont(QFont('Arial', 18))
+            auth_label = QtWidgets.QLabel('Авторизация через Яндекс')
+            auth_label.setAlignment(QtCore.Qt.AlignCenter)
+            auth_label.setFont(QtGui.QFont('Arial', 18))
             auth_label.setStyleSheet("color: #e0e0e0; margin-bottom: 30px;")
             layout.addWidget(auth_label)
             
-            info_label = QLabel('Сейчас откроется браузер для входа через Яндекс.\nПожалуйста, завершите процесс авторизации.')
-            info_label.setAlignment(Qt.AlignCenter)
+            info_label = QtWidgets.QLabel('Сейчас откроется браузер для входа через Яндекс.\nПожалуйста, завершите процесс авторизации.')
+            info_label.setAlignment(QtCore.Qt.AlignCenter)
             info_label.setStyleSheet("color: #a0a0a0; font-size: 14px; margin-bottom: 20px;")
             layout.addWidget(info_label)
             
             # текст для отображения ошибок
-            self.auth_error_label = QLabel('')
-            self.auth_error_label.setAlignment(Qt.AlignCenter)
+            self.auth_error_label = QtWidgets.QLabel('')
+            self.auth_error_label.setAlignment(QtCore.Qt.AlignCenter)
             self.auth_error_label.setStyleSheet("color: #ff5252; font-size: 14px;")
             layout.addWidget(self.auth_error_label)
             
             # кнопка завершения
-            complete_button = QPushButton('Я завершил авторизацию')
+            complete_button = QtWidgets.QPushButton('Я завершил авторизацию')
             complete_button.setFixedSize(250, 50)
-            complete_button.setFont(QFont('Arial', 12))
+            complete_button.setFont(QtGui.QFont('Arial', 12))
             complete_button.clicked.connect(self.complete_authentication_safe)
             
-            button_layout = QHBoxLayout()
+            button_layout = QtWidgets.QHBoxLayout()
             button_layout.addStretch()
             button_layout.addWidget(complete_button)
             button_layout.addStretch()
@@ -68,10 +66,10 @@ class AuthScreen(QWidget):
             layout.addStretch()
             
             # повтор
-            retry_button = QPushButton('Повторить')
+            retry_button = QtWidgets.QPushButton('Повторить')
             retry_button.clicked.connect(self.start_auth)
             
-            retry_layout = QHBoxLayout()
+            retry_layout = QtWidgets.QHBoxLayout()
             retry_layout.addStretch()
             retry_layout.addWidget(retry_button)
             retry_layout.addStretch()
@@ -121,7 +119,7 @@ class AuthScreen(QWidget):
         except Exception as e:
             self.logger.critical(f"Критическая ошибка в процессе авторизации: {str(e)}", exc_info=True)
             self.auth_error_label.setText(f"Критическая ошибка: {str(e)}")
-            QMessageBox.critical(
+            QtWidgets.QMessageBox.critical(
                 self, 
                 "Ошибка авторизации", 
                 f"Произошла неожиданная ошибка при авторизации: {str(e)}"

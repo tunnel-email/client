@@ -9,6 +9,8 @@ TOKEN_LENGTH = 40
 PROXY_HOST = "45.159.181.118"
 PROXY_PORT = 3088
 
+SMTPD_LOGGING=False
+
 FUNNY_EMAILS = [
     "lolninjapro",
     "tacodancer1",

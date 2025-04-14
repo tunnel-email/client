@@ -1,9 +1,9 @@
-from PyQt5.QtCore import QThread, pyqtSignal
+from Qt import QtCore
 
-class Worker(QThread):
-    finished = pyqtSignal()
-    progress = pyqtSignal(str)
-    error = pyqtSignal(str)
+class Worker(QtCore.QThread):
+    finished = QtCore.Signal()
+    progress = QtCore.Signal(str)
+    error = QtCore.Signal(str)
     
     def __init__(self, task, *args, **kwargs):
         super().__init__()

@@ -1,4 +1,4 @@
-PyQT5
+Qt.py
+PySide6
 requests
-PyQTWebEngine
 acme

@@ -1,8 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from Qt import QtWidgets, QtCore, QtGui
 
-class LoadingScreen(QWidget):
+class LoadingScreen(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
@@ -10,16 +8,16 @@ class LoadingScreen(QWidget):
         self.setup_ui()
         
     def setup_ui(self):
-        layout = QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         
-        progress_label = QLabel("Создание туннеля и получение сертификата...")
-        progress_label.setAlignment(Qt.AlignCenter)
-        progress_label.setFont(QFont('Arial', 14))
+        progress_label = QtWidgets.QLabel("Создание туннеля и получение сертификата...")
+        progress_label.setAlignment(QtCore.Qt.AlignCenter)
+        progress_label.setFont(QtGui.QFont('Arial', 14))
         progress_label.setStyleSheet("color: #e0e0e0; margin-bottom: 20px;")
         layout.addWidget(progress_label)
         
-        self.progress_bar = QProgressBar()
+        self.progress_bar = QtWidgets.QProgressBar()
         self.progress_bar.setRange(0, 0)  # Неопределенный прогресс
         self.progress_bar.setFixedSize(400, 30)
         self.progress_bar.setStyleSheet("""
@@ -35,7 +33,7 @@ class LoadingScreen(QWidget):
             }
         """)
         
-        progress_layout = QHBoxLayout()
+        progress_layout = QtWidgets.QHBoxLayout()
         progress_layout.addStretch()
         progress_layout.addWidget(self.progress_bar)
         progress_layout.addStretch()

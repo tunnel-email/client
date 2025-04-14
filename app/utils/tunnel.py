@@ -39,13 +39,33 @@ token = \"{tunnel_secret}\"
 local_addr = \"127.0.0.1:8025\"""")
 
 
-def run_rathole():
-    rathole_path = resource_path("rathole")
-    
-    if sys.platform == "win32" and not rathole_path.endswith(".exe"):
-        rathole_path += ".exe"
 
-    subprocess.run([rathole_path, script_path("config.toml")], capture_output=True)
+class Rathole:
+    def __init__(self):
+        self.rh_process = None
+
+
+    def run(self):
+        rh_path = resource_path("rathole")
+
+        if sys.platform == "win32" and not rh_path.endswith(".exe"):
+            rh_path += ".exe"
+
+        with open(script_path("rathole.log"), "a") as f:
+            self.rh_process = subprocess.Popen([rh_path, script_path("config.toml")],
+                                               stdout=f, stderr=subprocess.STDOUT)
+
+
+    def stop(self):
+        if self.rh_process:
+            try:
+                self.rh_process.terminate()
+                self.rh_process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self.rh_process.kill()
+
+            self.rh_process = None
+
 
 
 def save_certificate(subdomain, fullchain, privkey):

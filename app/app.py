@@ -2,8 +2,7 @@ import json
 import threading
 import time
 import traceback
-from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QWidget, QMessageBox
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread, QSize
+from Qt import QtWidgets, QtCore
 
 from app.screens.welcome_screen import WelcomeScreen
 from app.screens.auth_screen import AuthScreen
@@ -16,7 +15,7 @@ from app.utils.worker import Worker
 from app.utils.api import get_ttl, script_path
 from app.utils.tunnel import (create_tunnel, delete_tunnel,
                              save_certificate, save_token, load_secrets,
-                             save_developer_token, run_rathole, add_tunnel_to_rathole)
+                             save_developer_token, add_tunnel_to_rathole, Rathole)
 from app.utils.logger import setup_logger
 
 import app.utils.mail_server_tls as mailserv
@@ -27,7 +26,7 @@ from app.config.constants import BASE_DOMAIN
 import os.path
 
 
-class EmailTunnelApp(QMainWindow):
+class EmailTunnelApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
     
@@ -46,7 +45,7 @@ class EmailTunnelApp(QMainWindow):
             self.logger.info("Приложение успешно инициализировано")
         except Exception as e:
             self.logger.critical(f"Критическая ошибка при инициализации приложения: {str(e)}", exc_info=True)
-            QMessageBox.critical(
+            QtWidgets.QMessageBox.critical(
                 self, 
                 "Ошибка инициализации", 
                 f"Не удалось запустить приложение: {str(e)}"
@@ -59,7 +58,7 @@ class EmailTunnelApp(QMainWindow):
             self.setGeometry(100, 100, 1000, 700)
             
             # стек экранов
-            self.stacked_widget = QStackedWidget()
+            self.stacked_widget = QtWidgets.QStackedWidget()
             self.setCentralWidget(self.stacked_widget)
             
 
@@ -197,6 +196,15 @@ class EmailTunnelApp(QMainWindow):
                 except Exception as timer_error:
                     self.logger.warning(f"Ошибка при остановке TTL таймера: {str(timer_error)}")
 
+            # останавливаем rathole
+            if hasattr(self, 'rathole'): # если сущ-т
+                try:
+                    self.logger.debug("Остановка rathole")
+
+                    self.rathole.stop()
+                except Exception as rh_error:
+                    self.logger.warning(f"Ошибка при остановке rathole: {str(rh_error)}")
+
             self.stacked_widget.setCurrentWidget(self.email_main_screen)
             self.logger.info("Туннель успешно удален")
         except Exception as e:
@@ -245,7 +253,10 @@ class EmailTunnelApp(QMainWindow):
             
             # запуск rathole в отдельном потоке
             self.logger.debug("Запуск rathole в фоновом режиме")
-            threading.Thread(target=run_rathole, daemon=True).start()
+
+            self.rathole = Rathole()
+
+            threading.Thread(target=self.rathole.run, daemon=True).start()
             
             # запуск почтового сервера и получение сигналов
             self.logger.debug(f"Запуск почтового сервера с сертификатами для {self.subdomain}")
@@ -277,6 +288,7 @@ class EmailTunnelApp(QMainWindow):
             if hasattr(self, 'ttl_timer') and self.ttl_timer.isActive(): # если сущ-т
                 try:
                     self.logger.debug("Остановка TTL таймера")
+
                     self.ttl_timer.stop()
                 except Exception as timer_error:
                     self.logger.warning(f"Ошибка при остановке таймера: {str(timer_error)}")
@@ -289,6 +301,15 @@ class EmailTunnelApp(QMainWindow):
                     self.mail_controller.stop()
                 except Exception as mail_error:
                     self.logger.warning(f"Ошибка при остановке почтового сервера: {str(mail_error)}")
+
+            # останавливаем rathole
+            if hasattr(self, 'rathole'): # если сущ-т
+                try:
+                    self.logger.debug("Остановка rathole")
+
+                    self.rathole.stop()
+                except Exception as rh_error:
+                    self.logger.warning(f"Ошибка при остановке rathole: {str(rh_error)}")
         except Exception as e:
             self.logger.error(f"Неожиданная ошибка при закрытии приложения: {str(e)}", exc_info=True)
         
@@ -313,7 +334,7 @@ class EmailTunnelApp(QMainWindow):
             self.updateTTL()
             
             # таймер
-            self.ttl_timer = QTimer()
+            self.ttl_timer = QtCore.QTimer()
             self.ttl_timer.timeout.connect(self.decrementTTL)
             self.ttl_timer.start(1000)
             self.logger.debug("TTL таймер запущен")
@@ -331,7 +352,7 @@ class EmailTunnelApp(QMainWindow):
             self.seconds_counter = 0  # Сбрасываем счетчик секунд
             self.logger.debug(f"Текущий TTL: {self.current_ttl} секунд")
         except ConnectionError:
-            self.logger.warning(f"Невозможно подключиться к серверу при updateTTL: {str(e)}")
+            self.logger.warning(f"Невозможно подключиться к серверу при updateTTL")
             self.email_interface_screen.show_ttl_error("сервер временно недоступен")
         except Exception as e:
             self.logger.warning(f"Ошибка при получении TTL: {str(e)}")
@@ -353,7 +374,7 @@ class EmailTunnelApp(QMainWindow):
                 
         except Exception as e:
             error_msg = str(e)
-            self.logger.error(f"Ошибка при decrementTTL: {erro_msg}")
+            self.logger.error(f"Ошибка при decrementTTL: {error_msg}")
     
 
     def addEmail(self, sender, subject, body, html_content=None):
@@ -394,11 +415,11 @@ class EmailTunnelApp(QMainWindow):
         # отображение ошибки пользователю
         try:
             
-            msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.Critical)
+            msg_box = QtWidgets.QMessageBox(self)
+            msg_box.setIcon(QtWidgets.QMessageBox.Critical)
             msg_box.setWindowTitle("Ошибка")
             msg_box.setText(error_msg)
-            msg_box.setStandardButtons(QMessageBox.Ok)
+            msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
             
             msg_box.setStyleSheet("""
                 QMessageBox {

@@ -1,12 +1,10 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QMessageBox
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from Qt import QtWidgets, QtCore, QtGui
 from app.screens.zerossl_browser import ZeroSSLBrowser
 from app.config.constants import BASE_URL, ZEROSSL_LOGIN
 from app.utils.logger import setup_logger
 
 
-class DevTokenScreen(QWidget):
+class DevTokenScreen(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
@@ -16,7 +14,7 @@ class DevTokenScreen(QWidget):
             self.setup_ui()
         except Exception as e:
             self.logger.error(f"Ошибка инициализации интерфейса токена: {str(e)}", exc_info=True)
-            QMessageBox.critical(
+            QtWidgets.QMessageBox.critical(
                 self,
                 "Ошибка инициализации",
                 f"Не удалось инициализировать экран токена: {str(e)}"
@@ -24,37 +22,37 @@ class DevTokenScreen(QWidget):
         
     def setup_ui(self):
         try:
-            layout = QVBoxLayout(self)
+            layout = QtWidgets.QVBoxLayout(self)
             layout.setContentsMargins(20, 20, 20, 20)
             
             # интерфейс для developer token
-            title_label = QLabel('Необходим Developer Token')
-            title_label.setAlignment(Qt.AlignCenter)
-            title_label.setFont(QFont('Arial', 18))
+            title_label = QtWidgets.QLabel('Необходим Developer Token')
+            title_label.setAlignment(QtCore.Qt.AlignCenter)
+            title_label.setFont(QtGui.QFont('Arial', 18))
             title_label.setStyleSheet("color: #e0e0e0; margin-bottom: 30px;") 
             layout.addWidget(title_label)
             
-            instruction_label = QLabel('Зарегистрируйтесь на ZeroSSL, после успешного входа зайдите во вкладку Developer и скопируйте токен')
-            instruction_label.setAlignment(Qt.AlignCenter)
+            instruction_label = QtWidgets.QLabel('Зарегистрируйтесь на ZeroSSL, после успешного входа зайдите во вкладку Developer и скопируйте токен')
+            instruction_label.setAlignment(QtCore.Qt.AlignCenter)
             instruction_label.setStyleSheet("color: #a0a0a0; font-size: 14px; margin-bottom: 20px;")
             layout.addWidget(instruction_label)
             
             # кнопка для открытия встроенного браузера вместо внешнего
-            register_button = QPushButton('Открыть сайт ZeroSSL')
+            register_button = QtWidgets.QPushButton('Открыть сайт ZeroSSL')
             register_button.clicked.connect(self.open_zerossl_browser)
             register_button.setFixedSize(300, 40)
             
-            button_layout = QHBoxLayout()
+            button_layout = QtWidgets.QHBoxLayout()
             button_layout.addStretch()
             button_layout.addWidget(register_button)
             button_layout.addStretch()
             layout.addLayout(button_layout)
             
-            token_layout = QHBoxLayout()
-            token_label = QLabel('Developer Token:')
+            token_layout = QtWidgets.QHBoxLayout()
+            token_label = QtWidgets.QLabel('Developer Token:')
             token_label.setFixedWidth(120)
             token_label.setStyleSheet("color: #e0e0e0;")
-            self.token_input = QLineEdit()
+            self.token_input = QtWidgets.QLineEdit()
             self.token_input.setMinimumWidth(300)
             self.token_input.setPlaceholderText("Введите ваш Developer Token")
             self.token_input.setStyleSheet("""
@@ -79,11 +77,11 @@ class DevTokenScreen(QWidget):
             layout.addSpacing(20)
             
             # кнопка отправки
-            submit_button = QPushButton('Cохранить')
+            submit_button = QtWidgets.QPushButton('Cохранить')
             submit_button.clicked.connect(self.parent.submitDeveloperToken)
             submit_button.setFixedSize(200, 40)
             
-            button_layout2 = QHBoxLayout()
+            button_layout2 = QtWidgets.QHBoxLayout()
             button_layout2.addStretch()
             button_layout2.addWidget(submit_button)
             button_layout2.addStretch()
@@ -104,7 +102,7 @@ class DevTokenScreen(QWidget):
             browser.exec_()
         except Exception as e:
             self.logger.error(f"Ошибка при открытии браузера ZeroSSL: {str(e)}", exc_info=True)
-            QMessageBox.critical(
+            QtWidgets.QMessageBox.critical(
                 self,
                 "Ошибка браузера",
                 f"Не удалось открыть встроенный браузер: {str(e)}"
@@ -120,11 +118,11 @@ class DevTokenScreen(QWidget):
     def show_warning(self):
         try:
             self.logger.warning("Отображение предупреждения о пустом токене")
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Warning)
+            msg = QtWidgets.QMessageBox()
+            msg.setIcon(QtWidgets.QMessageBox.Warning)
             msg.setWindowTitle("Предупреждение")
             msg.setText("Пожалуйста, введите Developer Token")
-            msg.setStandardButtons(QMessageBox.Ok)
+            msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
             msg.setStyleSheet("""
                 QMessageBox {
                     background-color: #1e1e1e;

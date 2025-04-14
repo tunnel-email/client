@@ -12,5 +12,11 @@ prompt.md
 main.spec
 build/
 dist/
+main.dist/
+main.build/
+main.onefile-build/
+main.bin
 rathole
 rathole.exe
+rathole.log
+prompter.py

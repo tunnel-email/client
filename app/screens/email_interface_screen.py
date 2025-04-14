@@ -1,10 +1,8 @@
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, 
-                        QSplitter, QListWidget, QListWidgetItem, QScrollArea,
-                        QMessageBox, QPushButton, QLineEdit)
-from PyQt5.QtCore import Qt, QUrl, QTimer, QRegExp
-from PyQt5.QtGui import QFont, QRegExpValidator
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEnginePage
+from Qt import QtWidgets, QtCore, QtGui
+
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
+
 import webbrowser
 import html
 import time
@@ -22,7 +20,7 @@ class ExternalBrowserPage(QWebEnginePage):
         
     def acceptNavigationRequest(self, url, _type, isMainFrame):
         try:
-            if _type == QWebEnginePage.NavigationTypeLinkClicked:
+            if _type == QWebEnginePage.NavigationType.NavigationTypeLinkClicked:  
                 url_str = url.toString()
                 # открываем ссылку в системном браузере
                 webbrowser.open(url_str)
@@ -33,7 +31,7 @@ class ExternalBrowserPage(QWebEnginePage):
         return True
 
 
-class EmailInterfaceScreen(QWidget):
+class EmailInterfaceScreen(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.logger = setup_logger(f"{self.__class__.__name__}")
@@ -46,7 +44,7 @@ class EmailInterfaceScreen(QWidget):
             self.logger.debug("Интерфейс электронной почты успешно инициализирован")
         except Exception as e:
             self.logger.error(f"Ошибка при инициализации интерфейса почты: {str(e)}", exc_info=True)
-            QMessageBox.critical(
+            QtWidgets.QMessageBox.critical(
                 self,
                 "Ошибка инициализации",
                 f"Не удалось инициализировать интерфейс почты: {str(e)}"
@@ -55,24 +53,24 @@ class EmailInterfaceScreen(QWidget):
     def setup_ui(self):
         try:
             self.logger.debug("Настройка UI интерфейса электронной почты")
-            self.layout = QVBoxLayout(self)
+            self.layout = QtWidgets.QVBoxLayout(self)
             self.layout.setContentsMargins(0, 0, 0, 0)
             self.layout.setSpacing(0)
             
             # Верхняя панель
-            self.top_frame = QFrame()
+            self.top_frame = QtWidgets.QFrame()
             self.top_frame.setFixedHeight(40)
-            self.top_frame.setFrameShape(QFrame.NoFrame)
+            self.top_frame.setFrameShape(QtWidgets.QFrame.NoFrame)
             self.top_frame.setStyleSheet("background-color: #292929;")
             
-            self.top_bar = QHBoxLayout(self.top_frame)
+            self.top_bar = QtWidgets.QHBoxLayout(self.top_frame)
             self.top_bar.setContentsMargins(10, 0, 10, 0)
             self.top_bar.setSpacing(10)
 
             # Кнопка для настроек
-            self.settings_button = QPushButton("⋮")
+            self.settings_button = QtWidgets.QPushButton("⋮")
             self.settings_button.setFixedWidth(30)
-            self.settings_button.setFont(QFont('Arial', 16))
+            self.settings_button.setFont(QtGui.QFont('Arial', 16))
             self.settings_button.setStyleSheet("""
                 QPushButton {
                     background-color: #333333;
@@ -92,14 +90,14 @@ class EmailInterfaceScreen(QWidget):
             self.top_bar.addWidget(self.settings_button)
             
             # контейнер для почтового адреса
-            self.email_container = QWidget()
-            email_layout = QHBoxLayout(self.email_container)
+            self.email_container = QtWidgets.QWidget()
+            email_layout = QtWidgets.QHBoxLayout(self.email_container)
             email_layout.setContentsMargins(0, 0, 0, 0)
             email_layout.setSpacing(2)
 
             # Поле ввода для части до @
-            self.email_input = QLineEdit(random.choice(FUNNY_EMAILS))
-            self.email_input.setFont(QFont('Arial', 12))
+            self.email_input = QtWidgets.QLineEdit(random.choice(FUNNY_EMAILS))
+            self.email_input.setFont(QtGui.QFont('Arial', 12))
             self.email_input.setStyleSheet("""
                 QLineEdit {
                     background-color: #333333;
@@ -115,25 +113,25 @@ class EmailInterfaceScreen(QWidget):
             """)
             
             # Предотвращение автоматической фокусировки на поле ввода
-            self.email_input.setFocusPolicy(Qt.ClickFocus)
+            self.email_input.setFocusPolicy(QtCore.Qt.ClickFocus)
             
             self.email_input.setMaxLength(60)
             
             # Только буквы, цифры, точки, - и _ для почтового адреса
-            rx = QRegExp('^[a-zA-Z0-9][a-zA-Z0-9._-]*$')
-            validator = QRegExpValidator(rx)
+            rx = QtCore.QRegExp('^[a-zA-Z0-9][a-zA-Z0-9._-]*$')
+            validator = QtGui.QRegExpValidator(rx)
             self.email_input.setValidator(validator)
             
             email_layout.addWidget(self.email_input)
 
             # Метка с @ и доменом
-            self.domain_label = QLabel("@загрузка...")
-            self.domain_label.setFont(QFont('Arial', 12))
+            self.domain_label = QtWidgets.QLabel("@загрузка...")
+            self.domain_label.setFont(QtGui.QFont('Arial', 12))
             self.domain_label.setStyleSheet("color: #e0e0e0; font-weight: bold;")
             email_layout.addWidget(self.domain_label)
 
             # Кнопка копирования
-            self.copy_button = QPushButton("Копировать")
+            self.copy_button = QtWidgets.QPushButton("Копировать")
             self.copy_button.setStyleSheet("""
                 QPushButton {
                     background-color: #3498db;
@@ -158,15 +156,15 @@ class EmailInterfaceScreen(QWidget):
             self.top_bar.addStretch()
             
             # TTL indicator
-            self.ttl_label = QLabel("Осталось: загрузка...")
-            self.ttl_label.setFont(QFont('Arial', 12))
+            self.ttl_label = QtWidgets.QLabel("Осталось: загрузка...")
+            self.ttl_label.setFont(QtGui.QFont('Arial', 12))
             self.ttl_label.setStyleSheet("color: #2ecc71;")
-            self.ttl_label.setAlignment(Qt.AlignVCenter)
+            self.ttl_label.setAlignment(QtCore.Qt.AlignVCenter)
 
             self.top_bar.addWidget(self.ttl_label)
 
             # "Удалить почту"
-            self.delete_button = QPushButton("Удалить почту")
+            self.delete_button = QtWidgets.QPushButton("Удалить почту")
             self.delete_button.setStyleSheet("""
                 QPushButton {
                     background-color: #e74c3c;
@@ -188,20 +186,20 @@ class EmailInterfaceScreen(QWidget):
             self.layout.addWidget(self.top_frame)
             
             # сплиттер
-            main_container = QWidget()
-            main_layout = QVBoxLayout(main_container)
+            main_container = QtWidgets.QWidget()
+            main_layout = QtWidgets.QVBoxLayout(main_container)
             main_layout.setContentsMargins(10, 10, 10, 10)
             
-            self.splitter = QSplitter(Qt.Horizontal)
+            self.splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
             
             # Левая панель - контейнер для списка писем и сообщения о пустом списке
-            email_list_container = QWidget()
-            email_list_layout = QVBoxLayout(email_list_container)
+            email_list_container = QtWidgets.QWidget()
+            email_list_layout = QtWidgets.QVBoxLayout(email_list_container)
             email_list_layout.setContentsMargins(0, 0, 0, 0)
             email_list_layout.setSpacing(0)
             
             # Список писем
-            self.email_list = QListWidget()
+            self.email_list = QtWidgets.QListWidget()
             self.email_list.setMinimumWidth(350)
             self.email_list.setStyleSheet("""
                 QListWidget {
@@ -226,9 +224,9 @@ class EmailInterfaceScreen(QWidget):
             self.email_list.currentItemChanged.connect(self.display_email)
             
             # "Тут пока пусто..."
-            self.empty_list_label = QLabel("Тут пока пусто...")
-            self.empty_list_label.setAlignment(Qt.AlignCenter)
-            self.empty_list_label.setFont(QFont('Arial', 12))
+            self.empty_list_label = QtWidgets.QLabel("Тут пока пусто...")
+            self.empty_list_label.setAlignment(QtCore.Qt.AlignCenter)
+            self.empty_list_label.setFont(QtGui.QFont('Arial', 12))
             self.empty_list_label.setStyleSheet("""
                 color: #808080;
                 background-color: #1e1e1e;
@@ -249,13 +247,13 @@ class EmailInterfaceScreen(QWidget):
             self.empty_list_label.show()
 
             # правая панель 
-            right_panel = QWidget()
-            right_layout = QVBoxLayout(right_panel)
+            right_panel = QtWidgets.QWidget()
+            right_layout = QtWidgets.QVBoxLayout(right_panel)
             right_layout.setContentsMargins(0, 0, 0, 5)
             right_layout.setSpacing(10)
             
             # заголовк письма
-            self.email_header_widget = QWidget()
+            self.email_header_widget = QtWidgets.QWidget()
             self.email_header_widget.setObjectName("email_header_widget")
             self.email_header_widget.setStyleSheet("""
             QWidget#email_header_widget {
@@ -267,29 +265,29 @@ class EmailInterfaceScreen(QWidget):
             }
             """)
 
-            self.email_header_layout = QVBoxLayout(self.email_header_widget)
+            self.email_header_layout = QtWidgets.QVBoxLayout(self.email_header_widget)
             self.email_header_layout.setSpacing(10)
             
-            self.email_subject_label = QLabel()
-            self.email_subject_label.setFont(QFont('Arial', 14, QFont.Bold))
+            self.email_subject_label = QtWidgets.QLabel()
+            self.email_subject_label.setFont(QtGui.QFont('Arial', 14, QtGui.QFont.Bold))
             self.email_subject_label.setStyleSheet("color: #3498db; margin-bottom: 0px;")
             
             self.email_subject_label.setWordWrap(True)
             
-            self.email_sender_label = QLabel()
-            self.email_sender_label.setFont(QFont('Arial', 11))
+            self.email_sender_label = QtWidgets.QLabel()
+            self.email_sender_label.setFont(QtGui.QFont('Arial', 11))
             
-            self.email_date_label = QLabel()
-            self.email_date_label.setFont(QFont('Arial', 11))
+            self.email_date_label = QtWidgets.QLabel()
+            self.email_date_label.setFont(QtGui.QFont('Arial', 11))
             self.email_date_label.setStyleSheet("color: #ababab;")
             
             self.email_header_layout.addWidget(self.email_subject_label)
             self.email_header_layout.addWidget(self.email_sender_label)
             self.email_header_layout.addWidget(self.email_date_label)
 
-            self.email_subject_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-            self.email_sender_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-            self.email_date_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            self.email_subject_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            self.email_sender_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            self.email_date_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
             
             # webview для содержимого письма
             self.email_content = QWebEngineView()
@@ -304,6 +302,7 @@ class EmailInterfaceScreen(QWidget):
             
             # безопасный рендеринг html и css
             try:
+                # Fix settings.setAttribute calls
                 settings = self.email_content.settings()
                 settings.setAttribute(QWebEngineSettings.AutoLoadImages, True)
                 settings.setAttribute(QWebEngineSettings.JavascriptEnabled, False)
@@ -399,7 +398,7 @@ class EmailInterfaceScreen(QWidget):
             self.settings_window.show()
         except Exception as e:
             self.logger.error(f"Ошибка при открытии окна настроек: {str(e)}", exc_info=True)
-            QMessageBox.warning(
+            QtWidgets.QMessageBox.warning(
                 self,
                 "Ошибка настроек",
                 f"Не удалось открыть окно настроек: {str(e)}"
@@ -411,17 +410,17 @@ class EmailInterfaceScreen(QWidget):
                 username = self.email_input.text()
                 full_address = f"{username}@{self.subdomain}"
                 
-                clipboard = QApplication.clipboard()
+                clipboard = QtWidgets.QApplication.clipboard()
                 clipboard.setText(full_address)
                 
                 self.copy_button.setText("Скопировано!")
-                QApplication.processEvents()
+                QtWidgets.QApplication.processEvents()
                 
                 # вернуть прежний текст через 2 секунды
                 def reset_button_text():
                     self.copy_button.setText("Копировать")
                 
-                QTimer.singleShot(2000, reset_button_text)
+                QtCore.QTimer.singleShot(2000, reset_button_text)
             else:
                 self.logger.warning("Попытка копирования адреса без поддомена")
         except Exception as e:
@@ -475,23 +474,23 @@ class EmailInterfaceScreen(QWidget):
                 self.logger.debug("Первое письмо в списке, замена пустого сообщения на список")
             
             # добавление письма
-            item = QListWidgetItem()
-            item_widget = QWidget()
+            item = QtWidgets.QListWidgetItem()
+            item_widget = QtWidgets.QWidget()
 
             item_widget.setStyleSheet("background-color: transparent;")
-            item_layout = QVBoxLayout(item_widget)
+            item_layout = QtWidgets.QVBoxLayout(item_widget)
             item_layout.setContentsMargins(5, 8, 5, 15)
             
-            sender_label = QLabel(email["sender"])
-            sender_label.setFont(QFont('Arial', 10, QFont.Bold))
+            sender_label = QtWidgets.QLabel(email["sender"])
+            sender_label.setFont(QtGui.QFont('Arial', 10, QtGui.QFont.Bold))
             sender_label.setStyleSheet("color: #e0e0e0;")
             
-            subject_label = QLabel(email["subject"])
-            subject_label.setFont(QFont('Arial', 9))
+            subject_label = QtWidgets.QLabel(email["subject"])
+            subject_label.setFont(QtGui.QFont('Arial', 9))
             subject_label.setStyleSheet("color: #cccccc;")
             
-            timestamp_label = QLabel(email["timestamp"])
-            timestamp_label.setFont(QFont('Arial', 8))
+            timestamp_label = QtWidgets.QLabel(email["timestamp"])
+            timestamp_label.setFont(QtGui.QFont('Arial', 8))
             timestamp_label.setStyleSheet("color: #808080;")
             
             item_layout.addWidget(sender_label)
@@ -504,7 +503,7 @@ class EmailInterfaceScreen(QWidget):
             self.email_list.addItem(item)
             self.email_list.setItemWidget(item, item_widget)
             
-            item.setData(Qt.UserRole, index)
+            item.setData(QtCore.Qt.UserRole, index)
             self.logger.debug(f"Письмо добавлено в список с индексом {index}")
             
             # автоматически выбираем первое письмо
@@ -517,7 +516,7 @@ class EmailInterfaceScreen(QWidget):
         try:
             if current:
                 # получение индекса письма из данных элемента
-                email_idx = current.data(Qt.UserRole)
+                email_idx = current.data(QtCore.Qt.UserRole)
                 
                 if not hasattr(self.parent, 'emails') or email_idx >= len(self.parent.emails):
                     self.logger.error(f"Индекс письма {email_idx} вне диапазона или список писем не существует")
@@ -581,18 +580,18 @@ class EmailInterfaceScreen(QWidget):
         try:
             self.logger.debug("Запрос подтверждения на удаление почты")
             # создаем диалог подтверждения
-            confirm_dialog = QMessageBox()
+            confirm_dialog = QtWidgets.QMessageBox()
             confirm_dialog.setWindowTitle("Подтверждение удаления")
             confirm_dialog.setText("Вы уверены, что хотите удалить почту сейчас? Все полученные письма будут потеряны")
-            confirm_dialog.setIcon(QMessageBox.Warning)
-            confirm_dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            confirm_dialog.setDefaultButton(QMessageBox.No)
+            confirm_dialog.setIcon(QtWidgets.QMessageBox.Warning)
+            confirm_dialog.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            confirm_dialog.setDefaultButton(QtWidgets.QMessageBox.No)
             
             # показываем диалог и получаем результат
             result = confirm_dialog.exec_()
             
             # пользователь подтвердил действие => удаляем почту
-            if result == QMessageBox.Yes:
+            if result == QtWidgets.QMessageBox.Yes:
                 self.logger.debug("Пользователь подтвердил удаление почты")
                 try:
                     self.email_list.clear()
@@ -601,11 +600,14 @@ class EmailInterfaceScreen(QWidget):
                     # после очистки списка показываем метку тут пусто
                     self.email_list.hide()
                     self.empty_list_label.show()
+
+                    # удаляем туннель
                     self.parent.deleteTunnel()
+
                     self.logger.info("Почта успешно удалена")
                 except Exception as e:
                     self.logger.error(f"Ошибка при удалении почты: {str(e)}", exc_info=True)
-                    QMessageBox.critical(
+                    QtWidgets.QMessageBox.critical(
                         self,
                         "Ошибка удаления",
                         f"Произошла ошибка при удалении почты: {str(e)}"
