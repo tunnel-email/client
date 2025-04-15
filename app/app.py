@@ -261,7 +261,7 @@ class EmailTunnelApp(QtWidgets.QMainWindow):
             # запуск почтового сервера и получение сигналов
             self.logger.debug(f"Запуск почтового сервера с сертификатами для {self.subdomain}")
 
-            certs_path = os.path.join(script_path("certs"), self.subdomain)
+            certs_path = os.path.join(script_path(".certs"), self.subdomain)
             self.mail_controller, self.email_signals = mailserv.start(certs_path)
             
             # подключаем сигнал о новых письмах к обработчику

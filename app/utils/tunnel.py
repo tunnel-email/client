@@ -30,7 +30,7 @@ def delete_tunnel(token):
 
 
 def add_tunnel_to_rathole(tunnel_id, tunnel_secret):
-    with open(script_path("config.toml"), "w") as file:
+    with open(script_path(".config.toml"), "w") as file:
         file.write(f"""[client]
 remote_addr = "{BASE_DOMAIN}:6789"
 
@@ -46,13 +46,13 @@ class Rathole:
 
 
     def run(self):
-        rh_path = resource_path("rathole")
+        if sys.platform == "win32":
+            rh_path = os.path.join(resource_path("bin"), "rathole.exe")
+        else:
+            rh_path = os.path.join(resource_path("bin"), "rathole")
 
-        if sys.platform == "win32" and not rh_path.endswith(".exe"):
-            rh_path += ".exe"
-
-        with open(script_path("rathole.log"), "a") as f:
-            self.rh_process = subprocess.Popen([rh_path, script_path("config.toml")],
+        with open(script_path(".rathole.log"), "a") as f:
+            self.rh_process = subprocess.Popen([rh_path, script_path(".config.toml")],
                                                stdout=f, stderr=subprocess.STDOUT)
 
 
@@ -69,7 +69,7 @@ class Rathole:
 
 
 def save_certificate(subdomain, fullchain, privkey):
-    certs_path = script_path("certs")
+    certs_path = script_path(".certs")
 
     if not os.path.exists(certs_path):
         os.mkdir(certs_path)
@@ -86,14 +86,14 @@ def save_certificate(subdomain, fullchain, privkey):
 
 
 def save_token(token):
-    secrets_path = script_path("secrets.json")
+    secrets_path = script_path(".secrets.json")
 
     with open(secrets_path, "w") as f:
         json.dump({"token": token}, f)
 
 
 def load_secrets():
-    secrets_path = script_path("secrets.json")
+    secrets_path = script_path(".secrets.json")
 
     with open(secrets_path, "r") as f:
         data = json.load(f)
@@ -102,7 +102,7 @@ def load_secrets():
 
 
 def save_developer_token(developer_token):
-    secrets_path = script_path("secrets.json")
+    secrets_path = script_path(".secrets.json")
 
     with open(secrets_path, "r") as f:
         conf = json.load(f)

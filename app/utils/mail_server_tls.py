@@ -3,6 +3,7 @@ import ssl
 import email
 import threading
 import time
+import os
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import SMTP
 from email.policy import default
@@ -105,7 +106,11 @@ class EmailHandler:
 
 def start(certs_path, port=8025):
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.load_cert_chain(f'{certs_path}/fullchain.pem', f'{certs_path}/privkey.pem')
+
+    fc_path = os.path.join(certs_path, "fullchain.pem")
+    pk_path = os.path.join(certs_path, "privkey.pem")
+
+    ssl_context.load_cert_chain(fc_path, pk_path)
 
     # запуск
     controller = Controller(
@@ -114,7 +119,8 @@ def start(certs_path, port=8025):
         port=port,
         server_kwargs={
             'tls_context': ssl_context,
-            'require_starttls': True
+            'require_starttls': True,
+            'timeout': 15
         }
     )
     

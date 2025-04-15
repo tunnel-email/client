@@ -30,6 +30,12 @@ class ExternalBrowserPage(QWebEnginePage):
             
         return True
 
+    def createWindow(self, _type):
+        # для ссылок, открывающихся в новом окне
+        dummy_page = ExternalBrowserPage(self)
+        dummy_page.urlChanged.connect(lambda url: webbrowser.open(url.toString()))
+        return dummy_page
+
 
 class EmailInterfaceScreen(QtWidgets.QWidget):
     def __init__(self, parent=None):

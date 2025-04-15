@@ -6,7 +6,7 @@ from app.utils.api import script_path
 
 
 # создание директории с логами
-log_dir = script_path('logs')
+log_dir = script_path('.logs')
 os.makedirs(log_dir, exist_ok=True)
 
 # имя файла с текущей датой
