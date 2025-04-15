@@ -16,8 +16,7 @@ python3 main.py
 ```
 ### Собрать через nuitka (рекомендуется)
 ```bash
-nuitka --enable-plugin=pyside6 --onefile --windows-disable-console --include-data-files=rathole=rathole main.py # linux/macos
-nuitka --enable-plugin=pyside6 --onefile --windows-disable-console --include-data-files=rathole=rathole.exe main.py # windows
+nuitka --enable-plugin=pyside6 --onefile --windows-disable-console main.py
 ```
 
 ### Собрать через pyinstaller:
