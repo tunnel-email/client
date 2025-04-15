@@ -2,3 +2,5 @@ Qt.py
 PySide6
 requests
 acme
+aiosmtpd
+PySocks
