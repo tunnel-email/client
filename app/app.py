@@ -15,7 +15,8 @@ from app.utils.worker import Worker
 from app.utils.api import get_ttl, script_path
 from app.utils.tunnel import (create_tunnel, delete_tunnel,
                              save_certificate, save_token, load_secrets,
-                             save_developer_token, add_tunnel_to_rathole, Rathole)
+                             save_developer_token, add_tunnel_to_rathole, Rathole,
+                             save_ca_choice)
 from app.utils.logger import setup_logger
 
 import app.utils.mail_server_tls as mailserv
@@ -38,6 +39,9 @@ class EmailTunnelApp(QtWidgets.QMainWindow):
         self.subdomain = None
         self.tunnel_setup_failed = False
         self.emails = []
+
+        self.use_zerossl = False # по умолчанию используется Let's Encrypt
+        self.dev_token = None
     
         try:
             self.initUI()
@@ -80,17 +84,21 @@ class EmailTunnelApp(QtWidgets.QMainWindow):
         except Exception as e:
             self.logger.error(f"Ошибка при инициализации интерфейса: {str(e)}", exc_info=True)
             raise
-    
+
+
     def loadToken(self):
         self.logger.debug("Загрузка сохраненных токенов")
         try:
-            self.token, self.dev_token = load_secrets()
+            self.token, self.dev_token, self.use_zerossl = load_secrets()
             
             if self.token and self.dev_token:
-                self.logger.info("Найдены оба токена, переход к главному экрану")
+                self.logger.info("Найдены оба токена")
                 self.stacked_widget.setCurrentWidget(self.email_main_screen)
-            elif self.token and not self.dev_token:
-                self.logger.info("Найден только токен авторизации, требуется developer токен")
+            elif self.token and not self.dev_token and not self.use_zerossl:
+                self.logger.info("Найден только токен авторизации, нет developer токена, используется Let's Encrypt")
+                self.stacked_widget.setCurrentWidget(self.email_main_screen)
+            elif self.token and self.use_zerossl:
+                self.logger.info("Не найден токен ZeroSSL, переход к окну ввода токена")
                 self.stacked_widget.setCurrentWidget(self.dev_token_screen)
             else:
                 self.logger.info("Токены не найдены, отображение приветственного экрана")
@@ -104,6 +112,26 @@ class EmailTunnelApp(QtWidgets.QMainWindow):
         except Exception as e:
             self.logger.error(f"Неожиданная ошибка при загрузке токена: {str(e)}", exc_info=True)
             self.stacked_widget.setCurrentWidget(self.welcome_screen)
+
+    def switch_to_zerossl(self):
+        self.use_zerossl = True
+
+        save_ca_choice(True)
+
+        if not self.dev_token:
+            self.stacked_widget.setCurrentWidget(self.dev_token_screen)
+
+    def switch_to_le(self):
+        self.use_zerossl = False
+
+        save_ca_choice(False)
+
+    def go_back_from_dev_token_screen(self):
+        self.stacked_widget.setCurrentWidget(self.email_main_screen)
+
+        # switching back to le
+        self.email_main_screen.le_radio.setChecked(True)
+        self.switch_to_le()
     
     def startAuthentication(self):
         try:
@@ -124,7 +152,7 @@ class EmailTunnelApp(QtWidgets.QMainWindow):
                 
                 try:
                     save_token(self.auth_screen.auth_token)
-                    self.stacked_widget.setCurrentWidget(self.dev_token_screen)
+                    self.stacked_widget.setCurrentWidget(self.email_main_screen)
                 except Exception as save_error:
                     self.logger.error(f"Ошибка при сохранении токена: {str(save_error)}", exc_info=True)
                     raise save_error
@@ -138,7 +166,7 @@ class EmailTunnelApp(QtWidgets.QMainWindow):
 
     def submitDeveloperToken(self):
         try:
-            self.dev_token = self.dev_token_screen.token_input.text()
+            self.dev_token = self.dev_token_screen.token_input.text().strip()
             if self.dev_token:
                 try:
                     save_developer_token(self.dev_token)
@@ -239,7 +267,12 @@ class EmailTunnelApp(QtWidgets.QMainWindow):
             
             self.logger.debug("Запрос сертификата")
 
-            fullchain, privkey = get_certificate(self.token, self.dev_token, self.subdomain)
+            if self.dev_token and self.use_zerossl:
+                fullchain, privkey = get_certificate(self.token, self.subdomain,
+                                                     self.dev_token, "zerossl")
+            else:
+                fullchain, privkey = get_certificate(self.token, self.subdomain)
+
 
             self.logger.debug("Сертификат получен, сохранение")
             save_certificate(self.subdomain, fullchain, privkey)

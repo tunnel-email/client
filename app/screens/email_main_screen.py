@@ -21,6 +21,7 @@ class EmailMainScreen(QtWidgets.QWidget):
         
     def setup_ui(self):
         try:
+            # Основной layout остаётся как был
             layout = QtWidgets.QVBoxLayout(self)
             layout.setContentsMargins(20, 20, 20, 20)
             
@@ -44,11 +45,51 @@ class EmailMainScreen(QtWidgets.QWidget):
             layout.addLayout(button_layout)
             layout.addSpacing(30)
             
-    
             placeholder = QtWidgets.QLabel("Нажмите 'Создать новую почту' для начала работы")
             placeholder.setAlignment(QtCore.Qt.AlignCenter)
             placeholder.setStyleSheet("color: #a0a0a0; font-size: 16px;")
             layout.addWidget(placeholder)
+            
+            # создаём отдельный виджет для выбора ca
+            ssl_widget = QtWidgets.QWidget(self)
+            ssl_layout = QtWidgets.QHBoxLayout(ssl_widget)
+            ssl_layout.setContentsMargins(0, 0, 0, 0)
+            ssl_layout.setSpacing(10)
+            
+            cert_label = QtWidgets.QLabel("CA:")
+            cert_label.setStyleSheet("color: #a0a0a0;")
+            
+            self.le_radio = QtWidgets.QRadioButton("Let's Encrypt")
+            self.le_radio.setStyleSheet("color: #e0e0e0;")
+            
+            self.zerossl_radio = QtWidgets.QRadioButton("ZeroSSL")
+            self.zerossl_radio.setStyleSheet("color: #e0e0e0;")
+            
+            if self.parent.use_zerossl:
+                self.zerossl_radio.setChecked(True)
+            else:
+                self.le_radio.setChecked(True)
+            
+            self.le_radio.toggled.connect(self.on_cert_provider_changed)
+            self.zerossl_radio.toggled.connect(self.on_cert_provider_changed)
+            
+            ssl_layout.addWidget(cert_label)
+            ssl_layout.addWidget(self.le_radio)
+            ssl_layout.addWidget(self.zerossl_radio)
+            ssl_layout.addStretch()
+
+            ssl_widget.setGeometry(20, 0, 350, 30)
         except Exception as e:
             self.logger.error(f"Ошибка в setup_ui: {str(e)}", exc_info=True)
             raise
+    
+    def on_cert_provider_changed(self):
+        try:
+            if self.zerossl_radio.isChecked():
+                self.parent.switch_to_zerossl()
+                self.logger.debug(f"Выбран провайдер сертификатов: ZeroSSL")
+            elif self.le_radio.isChecked():
+                self.parent.switch_to_le()
+                self.logger.debug(f"Выбран провайдер сертификатов: Let's Encrypt")
+        except Exception as e:
+            self.logger.error(f"Ошибка при смене провайдера сертификатов: {str(e)}", exc_info=True)

@@ -1,7 +1,7 @@
 from Qt import QtWidgets, QtCore, QtGui
-from app.screens.zerossl_browser import ZeroSSLBrowser
 from app.config.constants import BASE_URL, ZEROSSL_LOGIN
 from app.utils.logger import setup_logger
+import webbrowser
 
 
 class DevTokenScreen(QtWidgets.QWidget):
@@ -25,21 +25,19 @@ class DevTokenScreen(QtWidgets.QWidget):
             layout = QtWidgets.QVBoxLayout(self)
             layout.setContentsMargins(20, 20, 20, 20)
             
-            # интерфейс для developer token
             title_label = QtWidgets.QLabel('Необходим Developer Token')
             title_label.setAlignment(QtCore.Qt.AlignCenter)
             title_label.setFont(QtGui.QFont('Arial', 18))
             title_label.setStyleSheet("color: #e0e0e0; margin-bottom: 30px;") 
             layout.addWidget(title_label)
             
-            instruction_label = QtWidgets.QLabel('Зарегистрируйтесь на ZeroSSL, после успешного входа зайдите во вкладку Developer и скопируйте токен')
+            instruction_label = QtWidgets.QLabel('<b>Не работает в России.</b><br>Зарегистрируйтесь на ZeroSSL, после успешного входа зайдите во вкладку Developer и скопируйте токен')
             instruction_label.setAlignment(QtCore.Qt.AlignCenter)
             instruction_label.setStyleSheet("color: #a0a0a0; font-size: 14px; margin-bottom: 20px;")
             layout.addWidget(instruction_label)
             
-            # кнопка для открытия встроенного браузера вместо внешнего
             register_button = QtWidgets.QPushButton('Открыть сайт ZeroSSL')
-            register_button.clicked.connect(self.open_zerossl_browser)
+            register_button.clicked.connect(lambda: webbrowser.open(ZEROSSL_LOGIN))
             register_button.setFixedSize(300, 40)
             
             button_layout = QtWidgets.QHBoxLayout()
@@ -76,7 +74,6 @@ class DevTokenScreen(QtWidgets.QWidget):
             layout.addLayout(token_layout)
             layout.addSpacing(20)
             
-            # кнопка отправки
             submit_button = QtWidgets.QPushButton('Cохранить')
             submit_button.clicked.connect(self.parent.submitDeveloperToken)
             submit_button.setFixedSize(200, 40)
@@ -89,24 +86,40 @@ class DevTokenScreen(QtWidgets.QWidget):
             layout.addLayout(button_layout2)
             layout.addStretch()
             
+            # "вернуться назад"
+            back_button = QtWidgets.QPushButton('← Назад', self)
+            back_button.clicked.connect(self.go_back)
+            back_button.setStyleSheet("""
+                QPushButton {
+                    background: transparent;
+                    border: none;
+                    color: #0d6efd;
+                    font-weight: bold;
+                    padding: 5px;
+                    text-align: left;
+                }
+                QPushButton:hover {
+                    color: #0b5ed7;
+                    background: transparent;
+                }
+                QPushButton:pressed {
+                    color: #084298;
+                    background: transparent;
+                }
+            """)
+            back_button.setGeometry(20, 20, 100, 30)
+            
             self.logger.debug("UI экрана токена настроен успешно")
         except Exception as e:
             self.logger.error(f"Ошибка в setup_ui: {str(e)}", exc_info=True)
             raise
     
-    def open_zerossl_browser(self):
+    def go_back(self):
         try:
-            self.logger.debug("Открытие встроенного браузера ZeroSSL")
-            browser = ZeroSSLBrowser(ZEROSSL_LOGIN, self)
-            browser.token_received.connect(self.focus_on_token_input)
-            browser.exec_()
+            self.logger.debug("Нажата кнопка 'Вернуться назад'")
+            self.parent.go_back_from_dev_token_screen()
         except Exception as e:
-            self.logger.error(f"Ошибка при открытии браузера ZeroSSL: {str(e)}", exc_info=True)
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Ошибка браузера",
-                f"Не удалось открыть встроенный браузер: {str(e)}"
-            )
+            self.logger.error(f"Ошибка при возврате назад: {str(e)}", exc_info=True)
     
     def focus_on_token_input(self):
         try:

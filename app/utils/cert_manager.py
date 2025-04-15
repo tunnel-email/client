@@ -13,11 +13,10 @@ from acme import crypto_util
 from acme import errors
 from acme import messages
 from acme import standalone
-import socks
 import socket
 
 import requests
-from app.config.constants import BASE_URL, DIRECTORY_URL, PROXY_HOST, PROXY_PORT
+from app.config.constants import BASE_URL, DIRECTORY_URL_ZEROSSL, ZEROSSL_EAB_URL, DIRECTORY_URL_LE
 from app.utils.logger import setup_logger
 
 logger = setup_logger("cert_manager")
@@ -25,25 +24,6 @@ logger = setup_logger("cert_manager")
 USER_AGENT = 'mailtunnel'
 ACC_KEY_BITS = 2048
 CERT_PKEY_BITS = 2048
-
-original_socket = socket.socket
-
-def setup_proxy():
-    # перенаправление сокетов через прокси
-    socks.set_default_proxy(socks.SOCKS5 , PROXY_HOST, PROXY_PORT)
-    socket.socket = socks.socksocket
-
-@contextmanager
-def proxy_context():
-    # временное включение прокси для zerossl
-    try:
-        setup_proxy()
-        logger.debug("Прокси успешно включен")
-        yield
-    finally:
-        socket.socket = original_socket
-        logger.debug("Прокси отключен, восстановлены оригинальные настройки сети")
-
 
 def new_csr_comp(domain_name, pkey_pem=None):
     try:
@@ -76,7 +56,7 @@ def select_http01_chall(orderr):
                     logger.debug("HTTP-01 challenge найден")
                     return i
         
-        logger.error("HTTP-01 challenge не был предложен CA сервером")
+        logger.error("HTTP-01 challenge не был найден")
         raise Exception('HTTP-01 challenge was not offered by the CA server.')
     except Exception as e:
         if 'HTTP-01 challenge was not offered' in str(e):
@@ -111,32 +91,41 @@ def send_verification_data(token, url_token, validation_token):
         raise RuntimeError(f"Не удалось отправить данные верификации: {str(e)}")
 
 
-def get_certificate(token, developer_token, domain):
+def get_certificate(token, domain, developer_token=None, ca="le"):
     logger.debug(f"Запуск процесса получения сертификата для домена {domain}")
+
+    if not ca in ["le", "zerossl"]:
+        raise ValueError("ca should be either le (Let's Encrypt) or zerossl")
     
     try:
-        # Используем контекстный менеджер для работы с прокси
-        with proxy_context():
-            privkey = rsa.generate_private_key(
-                public_exponent=65537,
-                key_size=ACC_KEY_BITS,
-                backend=default_backend()
-            )
-            acc_key = jose.JWKRSA(key=privkey)
+        privkey = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=ACC_KEY_BITS,
+            backend=default_backend()
+        )
+        acc_key = jose.JWKRSA(key=privkey)
 
-            try:
-                net = client.ClientNetwork(acc_key, user_agent=USER_AGENT)
-                directory = client.ClientV2.get_directory(DIRECTORY_URL, net)
-                client_acme = client.ClientV2(directory, net=net)
-            except Exception as e:
-                logger.error(f"Ошибка при инициализации ACME клиента: {str(e)}", exc_info=True)
-                raise RuntimeError(f"Не удалось инициализировать ACME клиент: {str(e)}")
+        try:
+            net = client.ClientNetwork(acc_key, user_agent=USER_AGENT)
 
+            if ca == "le":
+                directory = client.ClientV2.get_directory(DIRECTORY_URL_LE, net)
+            elif ca == "zerossl":
+                directory = client.ClientV2.get_directory(DIRECTORY_URL_ZEROSSL, net)
+
+            client_acme = client.ClientV2(directory, net=net)
+        except Exception as e:
+            logger.error(f"Ошибка при инициализации ACME клиента: {str(e)}", exc_info=True)
+
+            raise RuntimeError(f"Не удалось инициализировать ACME клиент: {str(e)}")
+
+        if ca == "zerossl":
             # получение eab от zerossl
-            logger.debug("Запрос EAB креденшалов от ZeroSSL")
+            logger.debug("Запрос EAB credentials от ZeroSSL")
+
             try:
                 eab_response = requests.post(
-                    "https://api.zerossl.com/acme/eab-credentials",
+                    ZEROSSL_EAB_URL,
                     params={"access_key": developer_token},
                     timeout=30  # добавляем таймаут
                 )
@@ -169,65 +158,70 @@ def get_certificate(token, developer_token, domain):
                 raise RuntimeError(f"Неверный формат EAB данных от ZeroSSL: {str(e)}")
 
 
-            logger.debug("Регистрация нового ACME аккаунта")
+        logger.debug("Регистрация нового ACME аккаунта")
 
-            try:
+        try:
+            if ca == "zerossl":
                 regr = client_acme.new_account(
                     messages.NewRegistration.from_data(
                         external_account_binding=eab,
                         terms_of_service_agreed=True
                     )
                 )
-                logger.debug(f"Аккаунт ACME зарегистрирован: {regr.uri}")
-            except errors.Error as e:
-                logger.error(f"Ошибка при регистрации ACME аккаунта: {str(e)}", exc_info=True)
-                raise RuntimeError(f"Не удалось зарегистрировать ACME аккаунт: {str(e)}")
+            elif ca == "le":
+                regr = client_acme.new_account(
+                    messages.NewRegistration.from_data(
+                        terms_of_service_agreed=True
+                    )
+                )
+
+            logger.debug(f"Аккаунт ACME зарегистрирован: {regr.uri}")
+        except errors.Error as e:
+            logger.error(f"Ошибка при регистрации ACME аккаунта: {str(e)}", exc_info=True)
+            raise RuntimeError(f"Не удалось зарегистрировать ACME аккаунт: {str(e)}")
 
 
-            pkey_pem, csr_pem = new_csr_comp(domain)
+        pkey_pem, csr_pem = new_csr_comp(domain)
 
-            logger.debug("Создание нового запроса сертификата")
+        logger.debug("Создание нового запроса сертификата")
 
-            try:
-                orderr = client_acme.new_order(csr_pem)
+        try:
+            orderr = client_acme.new_order(csr_pem)
 
-                logger.debug(f"Заказ сертификата создан: {orderr.uri}")
-            except errors.Error as e:
-                logger.error(f"Ошибка при создании заказа сертификата: {str(e)}", exc_info=True)
-                raise RuntimeError(f"Не удалось создать заказ сертификата: {str(e)}")
+            logger.debug(f"Заказ сертификата создан: {orderr.uri}")
+        except errors.Error as e:
+            logger.error(f"Ошибка при создании заказа сертификата: {str(e)}", exc_info=True)
+            raise RuntimeError(f"Не удалось создать заказ сертификата: {str(e)}")
 
-            # http-01 challenge
-            logger.debug("Выбор HTTP-01 challenge")
-            challb = select_http01_chall(orderr)
+        # http-01 challenge
+        logger.debug("Выбор HTTP-01 challenge")
+        challb = select_http01_chall(orderr)
 
-            url_token = challb.chall.encode("token")
+        url_token = challb.chall.encode("token")
 
-            response, validation_token = challb.response_and_validation(client_acme.net.key)
+        response, validation_token = challb.response_and_validation(client_acme.net.key)
 
-            logger.debug("Отправка данных верификации")
-            send_verification_data(token, url_token, validation_token)
-            
-      
-            try:
-                client_acme.answer_challenge(challb, response)
-            except errors.Error as e:
-                logger.error(f"Ошибка при ответе на answer_challenge: {str(e)}", exc_info=True)
-                raise RuntimeError(f"Не удалось ответить на challenge: {str(e)}")
-
-        
-            logger.debug("Ожидание finalized_orderr сертификата")
-
-            try:
-                finalized_orderr = client_acme.poll_and_finalize(orderr)
-                logger.debug("Сертификат успешно получен")
-            except errors.Error as e:
-                logger.error(f"Ошибка при финализации заказа сертификата: {str(e)}", exc_info=True)
-                raise RuntimeError(f"Не удалось финализировать заказ сертификата: {str(e)}")
-
-            fullchain_pem = finalized_orderr.fullchain_pem
-            
-            return fullchain_pem, pkey_pem.decode("utf-8")
+        logger.debug("Отправка данных верификации")
+        send_verification_data(token, url_token, validation_token)
     
+        try:
+            client_acme.answer_challenge(challb, response)
+        except errors.Error as e:
+            logger.error(f"Ошибка при ответе на answer_challenge: {str(e)}", exc_info=True)
+            raise RuntimeError(f"Не удалось ответить на challenge: {str(e)}")
+
+        logger.debug("Ожидание finalized_orderr сертификата")
+
+        try:
+            finalized_orderr = client_acme.poll_and_finalize(orderr)
+            logger.debug("Сертификат успешно получен")
+        except errors.Error as e:
+            logger.error(f"Ошибка при финализации заказа сертификата: {str(e)}", exc_info=True)
+            raise RuntimeError(f"Не удалось финализировать заказ сертификата: {str(e)}")
+
+        fullchain_pem = finalized_orderr.fullchain_pem
+        
+        return fullchain_pem, pkey_pem.decode("utf-8")
     except Exception as e:
         logger.critical(f"Критическая ошибка при получении сертификата для {domain}: {str(e)}", exc_info=True)
         raise RuntimeError(f"Не удалось получить сертификат для {domain}: {str(e)}")

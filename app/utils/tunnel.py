@@ -39,7 +39,6 @@ token = \"{tunnel_secret}\"
 local_addr = \"127.0.0.1:8025\"""")
 
 
-
 class Rathole:
     def __init__(self):
         self.rh_process = None
@@ -52,9 +51,13 @@ class Rathole:
             rh_path = os.path.join(resource_path("bin"), "rathole")
 
         with open(script_path(".rathole.log"), "a") as f:
-            self.rh_process = subprocess.Popen([rh_path, script_path(".config.toml")],
-                                               stdout=f, stderr=subprocess.STDOUT,
-                                               creationflags=subprocess.CREATE_NO_WINDOW)
+            if sys.platform == "win32":
+                self.rh_process = subprocess.Popen([rh_path, script_path(".config.toml")],
+                                                stdout=f, stderr=subprocess.STDOUT,
+                                                creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                self.rh_process = subprocess.Popen([rh_path, script_path(".config.toml")],
+                                                stdout=f, stderr=subprocess.STDOUT)
 
 
     def stop(self):
@@ -66,7 +69,6 @@ class Rathole:
                 self.rh_process.kill()
 
             self.rh_process = None
-
 
 
 def save_certificate(subdomain, fullchain, privkey):
@@ -99,7 +101,7 @@ def load_secrets():
     with open(secrets_path, "r") as f:
         data = json.load(f)
 
-        return (data.get("token"), data.get("developer_token"))
+        return (data.get("token"), data.get("developer_token"), data.get("zerossl"))
 
 
 def save_developer_token(developer_token):
@@ -110,5 +112,17 @@ def save_developer_token(developer_token):
 
     with open(secrets_path, "w") as f:
         conf["developer_token"] = developer_token
+
+        json.dump(conf, f)
+
+
+def save_ca_choice(zerossl):
+    secrets_path = script_path(".secrets.json")
+
+    with open(secrets_path, "r") as f:
+        conf = json.load(f)
+
+    with open(secrets_path, "w") as f:
+        conf["zerossl"] = zerossl
 
         json.dump(conf, f)

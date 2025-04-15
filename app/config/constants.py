@@ -1,13 +1,13 @@
-from os.path import dirname
-
 BASE_DOMAIN = "tunnel.email"
 BASE_URL = "https://tunnel.email"
-DIRECTORY_URL = 'https://acme.zerossl.com/v2/DV90'
+
+DIRECTORY_URL_LE = 'https://acme-staging-v02.api.letsencrypt.org/directory'
+DIRECTORY_URL_ZEROSSL = 'https://acme.zerossl.com/v2/DV90'
+
 ZEROSSL_LOGIN = "https://app.zerossl.com/login"
+ZEROSSL_EAB_URL = "https://api.zerossl.com/acme/eab-credentials"
 
 TOKEN_LENGTH = 40
-PROXY_HOST = "45.159.181.118"
-PROXY_PORT = 3088
 
 SMTPD_LOGGING=False
 
