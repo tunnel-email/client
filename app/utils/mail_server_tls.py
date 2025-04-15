@@ -115,7 +115,7 @@ def start(certs_path, port=8025):
     # запуск
     controller = Controller(
         EmailHandler(),
-        hostname='0.0.0.0',
+        hostname='127.0.0.1',
         port=port,
         server_kwargs={
             'tls_context': ssl_context,
