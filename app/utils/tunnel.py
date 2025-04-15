@@ -53,7 +53,8 @@ class Rathole:
 
         with open(script_path(".rathole.log"), "a") as f:
             self.rh_process = subprocess.Popen([rh_path, script_path(".config.toml")],
-                                               stdout=f, stderr=subprocess.STDOUT)
+                                               stdout=f, stderr=subprocess.STDOUT,
+                                               creationflags=subprocess.CREATE_NO_WINDOW)
 
 
     def stop(self):
