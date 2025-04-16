@@ -47,7 +47,7 @@ local_addr = \"127.0.0.1:8025\"""")
 
     if make_hidden:
         # making the file hidden in windows
-        ctypes.windll.kernel32.SetFileAttributesW(path_to_conf, 0x02)
+        ctypes.windll.kernel32.SetFileAttributesW(path_to_conf, 0x22)
 
 
 class Rathole:
@@ -79,7 +79,7 @@ class Rathole:
 
         if make_hidden:
             # making the file hidden in windows
-            ctypes.windll.kernel32.SetFileAttributesW(path_to_log, 0x02)
+            ctypes.windll.kernel32.SetFileAttributesW(path_to_log, 0x22)
 
 
     def stop(self):
@@ -101,7 +101,7 @@ def save_certificate(subdomain, fullchain, privkey):
         
         if sys.platform == "win32":
             # making the folder hidden in windows
-            ctypes.windll.kernel32.SetFileAttributesW(certs_path, 0x02)
+            ctypes.windll.kernel32.SetFileAttributesW(certs_path, 0x22)
     
     path = os.path.join(certs_path, subdomain)
 
@@ -131,7 +131,7 @@ def load_secrets():
 
     if sys.platform == "win32":
         # making the file hidden in windows
-        ctypes.windll.kernel32.SetFileAttributesW(secrets_path, 0x02)
+        ctypes.windll.kernel32.SetFileAttributesW(secrets_path, 0x22)
 
     return (data.get("token"), data.get("developer_token"), data.get("zerossl"))
 
