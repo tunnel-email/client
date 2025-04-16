@@ -34,20 +34,21 @@ def add_tunnel_to_rathole(tunnel_id, tunnel_secret):
     path_to_conf = script_path(".config.toml")
     make_hidden = False
 
-    if not os.path.exists(path_to_conf) and sys.platform == "win32":
-        make_hidden = True
+    if not os.path.exists(path_to_conf):
+        open(path_to_conf, "w").close()
 
-    with open(path_to_conf, "w") as file:
+        if sys.platform == "win32":
+            # making the file hidden in windows
+            ctypes.windll.kernel32.SetFileAttributesW(path_to_conf, 0x02)
+
+    with open(path_to_conf, "r+") as file:
+        file.truncate()
         file.write(f"""[client]
 remote_addr = "{BASE_DOMAIN}:6789"
 
 [client.services.{tunnel_id}]
 token = \"{tunnel_secret}\"
 local_addr = \"127.0.0.1:8025\"""")
-
-    if make_hidden:
-        # making the file hidden in windows
-        ctypes.windll.kernel32.SetFileAttributesW(path_to_conf, 0x22)
 
 
 class Rathole:
@@ -79,7 +80,7 @@ class Rathole:
 
         if make_hidden:
             # making the file hidden in windows
-            ctypes.windll.kernel32.SetFileAttributesW(path_to_log, 0x22)
+            ctypes.windll.kernel32.SetFileAttributesW(path_to_log, 0x02)
 
 
     def stop(self):
@@ -101,7 +102,7 @@ def save_certificate(subdomain, fullchain, privkey):
         
         if sys.platform == "win32":
             # making the folder hidden in windows
-            ctypes.windll.kernel32.SetFileAttributesW(certs_path, 0x22)
+            ctypes.windll.kernel32.SetFileAttributesW(certs_path, 0x02)
     
     path = os.path.join(certs_path, subdomain)
 
@@ -117,8 +118,16 @@ def save_certificate(subdomain, fullchain, privkey):
 
 def save_token(token):
     secrets_path = script_path(".secrets.json")
+    
+    if not os.path.exists(secrets_path):
+        open(secrets_path, "w").close()
 
-    with open(secrets_path, "w") as f:
+    if sys.platform == "win32":
+        # making the file hidden in windows
+        ctypes.windll.kernel32.SetFileAttributesW(secrets_path, 0x02)
+
+    with open(secrets_path, "r+") as f:
+        f.truncate()
         json.dump({"token": token}, f)
 
 
@@ -129,10 +138,6 @@ def load_secrets():
     with open(secrets_path, "r") as f:
         data = json.load(f)
 
-    if sys.platform == "win32":
-        # making the file hidden in windows
-        ctypes.windll.kernel32.SetFileAttributesW(secrets_path, 0x22)
-
     return (data.get("token"), data.get("developer_token"), data.get("zerossl"))
 
 
@@ -142,7 +147,8 @@ def save_developer_token(developer_token):
     with open(secrets_path, "r") as f:
         conf = json.load(f)
 
-    with open(secrets_path, "w") as f:
+    with open(secrets_path, "r+") as f:
+        f.truncate()
         conf["developer_token"] = developer_token
 
         json.dump(conf, f)
@@ -154,7 +160,8 @@ def save_ca_choice(zerossl):
     with open(secrets_path, "r") as f:
         conf = json.load(f)
 
-    with open(secrets_path, "w") as f:
+    with open(secrets_path, "r+") as f:
+        f.truncate()
         conf["zerossl"] = zerossl
 
         json.dump(conf, f)
