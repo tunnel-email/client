@@ -4,6 +4,7 @@ import subprocess
 import threading
 import json
 import sys
+import ctypes
 from app.config.constants import BASE_URL, BASE_DOMAIN
 from app.utils.api import resource_path, script_path
 
@@ -30,13 +31,20 @@ def delete_tunnel(token):
 
 
 def add_tunnel_to_rathole(tunnel_id, tunnel_secret):
-    with open(script_path(".config.toml"), "w") as file:
+    path_to_conf = script_path(".config.toml")
+
+    with open(path_to_conf, "w") as file:
         file.write(f"""[client]
 remote_addr = "{BASE_DOMAIN}:6789"
 
 [client.services.{tunnel_id}]
 token = \"{tunnel_secret}\"
 local_addr = \"127.0.0.1:8025\"""")
+
+    if not os.path.exists(path_to_conf):
+        if sys.platform == "win32":
+            # making the file hidden in windows
+            ctypes.windll.kernel32.SetFileAttributesW(path_to_conf, 0x02)
 
 
 class Rathole:
@@ -50,7 +58,10 @@ class Rathole:
         else:
             rh_path = os.path.join(resource_path("bin"), "rathole")
 
-        with open(script_path(".rathole.log"), "a") as f:
+
+        path_to_log = script_path(".rathole.log")
+
+        with open(path_to_log, "a") as f:
             if sys.platform == "win32":
                 self.rh_process = subprocess.Popen([rh_path, script_path(".config.toml")],
                                                 stdout=f, stderr=subprocess.STDOUT,
@@ -58,6 +69,11 @@ class Rathole:
             else:
                 self.rh_process = subprocess.Popen([rh_path, script_path(".config.toml")],
                                                 stdout=f, stderr=subprocess.STDOUT)
+
+        if not os.path.exists(path_to_log):
+            if sys.platform == "win32":
+                # making the file hidden in windows
+                ctypes.windll.kernel32.SetFileAttributesW(path_to_log, 0x02)
 
 
     def stop(self):
@@ -78,8 +94,13 @@ def save_certificate(subdomain, fullchain, privkey):
         os.mkdir(certs_path)
     
     path = os.path.join(certs_path, subdomain)
+
     if not os.path.exists(path):
         os.mkdir(path)
+
+        if sys.platform == "win32":
+            # making the folder hidden in windows
+            ctypes.windll.kernel32.SetFileAttributesW(path, 0x02)
     
     with open(os.path.join(path, "fullchain.pem"), "w") as file:
         file.write(fullchain)
@@ -96,12 +117,17 @@ def save_token(token):
 
 
 def load_secrets():
+    # loads and creates .secrets.json
     secrets_path = script_path(".secrets.json")
 
     with open(secrets_path, "r") as f:
         data = json.load(f)
 
-        return (data.get("token"), data.get("developer_token"), data.get("zerossl"))
+    if sys.platform == "win32":
+        # making the file hidden in windows
+        ctypes.windll.kernel32.SetFileAttributesW(secrets_path, 0x02)
+
+    return (data.get("token"), data.get("developer_token"), data.get("zerossl"))
 
 
 def save_developer_token(developer_token):

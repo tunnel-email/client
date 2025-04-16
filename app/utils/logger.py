@@ -7,11 +7,16 @@ from app.utils.api import script_path
 
 # создание директории с логами
 log_dir = script_path('.logs')
-os.makedirs(log_dir, exist_ok=True)
+
+if not os.path.exists(log_dir):
+    os.mkdir(log_dir)
+
+    if sys.platform == "win32":
+        # making the folder hidden in windows
+        ctypes.windll.kernel32.SetFileAttributesW(log_dir, 0x02)
 
 # имя файла с текущей датой
 log_file = os.path.join(log_dir, f'mailtunnel_{datetime.now().strftime("%Y-%m-%d")}.log')
-
 
 def setup_logger(name):
     logger = logging.getLogger(name)
