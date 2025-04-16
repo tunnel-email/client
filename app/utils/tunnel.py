@@ -92,15 +92,15 @@ def save_certificate(subdomain, fullchain, privkey):
 
     if not os.path.exists(certs_path):
         os.mkdir(certs_path)
+        
+        if sys.platform == "win32":
+            # making the folder hidden in windows
+            ctypes.windll.kernel32.SetFileAttributesW(certs_path, 0x02)
     
     path = os.path.join(certs_path, subdomain)
 
     if not os.path.exists(path):
         os.mkdir(path)
-
-        if sys.platform == "win32":
-            # making the folder hidden in windows
-            ctypes.windll.kernel32.SetFileAttributesW(path, 0x02)
     
     with open(os.path.join(path, "fullchain.pem"), "w") as file:
         file.write(fullchain)
