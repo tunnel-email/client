@@ -32,6 +32,10 @@ def delete_tunnel(token):
 
 def add_tunnel_to_rathole(tunnel_id, tunnel_secret):
     path_to_conf = script_path(".config.toml")
+    make_hidden = False
+
+    if not os.path.exists(path_to_conf) and sys.platform == "win32":
+        make_hidden = True
 
     with open(path_to_conf, "w") as file:
         file.write(f"""[client]
@@ -41,10 +45,9 @@ remote_addr = "{BASE_DOMAIN}:6789"
 token = \"{tunnel_secret}\"
 local_addr = \"127.0.0.1:8025\"""")
 
-    if not os.path.exists(path_to_conf):
-        if sys.platform == "win32":
-            # making the file hidden in windows
-            ctypes.windll.kernel32.SetFileAttributesW(path_to_conf, 0x02)
+    if make_hidden:
+        # making the file hidden in windows
+        ctypes.windll.kernel32.SetFileAttributesW(path_to_conf, 0x02)
 
 
 class Rathole:
@@ -53,13 +56,17 @@ class Rathole:
 
 
     def run(self):
+        make_hidden = False
+
         if sys.platform == "win32":
             rh_path = os.path.join(resource_path("bin"), "rathole.exe")
         else:
             rh_path = os.path.join(resource_path("bin"), "rathole")
 
-
         path_to_log = script_path(".rathole.log")
+
+        if not os.path.exists(path_to_log) and sys.platform == "win32":
+            make_hidden = True
 
         with open(path_to_log, "a") as f:
             if sys.platform == "win32":
@@ -70,10 +77,9 @@ class Rathole:
                 self.rh_process = subprocess.Popen([rh_path, script_path(".config.toml")],
                                                 stdout=f, stderr=subprocess.STDOUT)
 
-        if not os.path.exists(path_to_log):
-            if sys.platform == "win32":
-                # making the file hidden in windows
-                ctypes.windll.kernel32.SetFileAttributesW(path_to_log, 0x02)
+        if make_hidden:
+            # making the file hidden in windows
+            ctypes.windll.kernel32.SetFileAttributesW(path_to_log, 0x02)
 
 
     def stop(self):
